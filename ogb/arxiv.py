@@ -28,9 +28,9 @@ def load_dataset():
     return g, labels, split_idx
 
 
-class Gcn(nn.Module):
+class GCN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
-        super(Gcn, self).__init__()
+        super(GCN, self).__init__()
 
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
@@ -90,7 +90,7 @@ def run_experiment(num_epochs=100, lr=0.01, hidden_dim=256, num_layers=3):
     g, labels, split_idx = load_dataset()
     evaluator = Evaluator(name='ogbn-arxiv')
     loss_func = nn.CrossEntropyLoss()
-    model = Gcn(128, hidden_dim, 40, num_layers)
+    model = GCN(128, hidden_dim, 40, num_layers)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     for epoch in range(num_epochs):
