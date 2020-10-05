@@ -16,6 +16,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+### Load the molecule dataset
+def load_dataset():
+    dataset = DglGraphPropPredDataset(name = 'ogbg-molhiv')
+    split_idx = dataset.get_idx_split()
+
+    ### Collate function for dataloaders
+    def _collate_fn(batch):
+        # batch is a list of tuple (graph, label)
+        graphs = [e[0] for e in batch]
+        g = dgl.batch(graphs)
+        labels = [e[1] for e in batch]
+        labels = torch.stack(labels, 0)
+        return g, labels
+
+    train_loader = DataLoader(dataset[split_idx["train"]], batch_size=32, shuffle=True, collate_fn=_collate_fn)
+    valid_loader = DataLoader(dataset[split_idx["valid"]], batch_size=32, shuffle=False, collate_fn=_collate_fn)
+    test_loader = DataLoader(dataset[split_idx["test"]], batch_size=32, shuffle=False, collate_fn=_collate_fn)
+
+    ### Return dataloaders
+    return train_loader, valid_loader, test_loader
+
+
 class GnnConv(nn.Module):
     def __init__(self, emb_dim, agg_type):
         super(GnnConv, self).__init__()
@@ -142,28 +164,6 @@ def eval(model, dataloader, evaluator):
     output_dict = evaluator.eval(input_dict)
 
     return output_dict
-
-
-### Load the molecule dataset
-def load_dataset():
-    dataset = DglGraphPropPredDataset(name = 'ogbg-molhiv')
-    split_idx = dataset.get_idx_split()
-
-    ### Collate function for dataloaders
-    def _collate_fn(batch):
-        # batch is a list of tuple (graph, label)
-        graphs = [e[0] for e in batch]
-        g = dgl.batch(graphs)
-        labels = [e[1] for e in batch]
-        labels = torch.stack(labels, 0)
-        return g, labels
-
-    train_loader = DataLoader(dataset[split_idx["train"]], batch_size=32, shuffle=True, collate_fn=_collate_fn)
-    valid_loader = DataLoader(dataset[split_idx["valid"]], batch_size=32, shuffle=False, collate_fn=_collate_fn)
-    test_loader = DataLoader(dataset[split_idx["test"]], batch_size=32, shuffle=False, collate_fn=_collate_fn)
-
-    ### Return dataloaders
-    return train_loader, valid_loader, test_loader
 
 
 def run_experiment(num_epochs=10, lr=0.001, emb_dim=100, num_layers=3, agg_type='sum'):
