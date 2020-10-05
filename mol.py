@@ -219,4 +219,4 @@ def plot_results(train_curve, valid_curve, test_curve):
 
 
 if __name__ == "__main__":
-    plot_results(*run_experiment())
+    plot_results(*run_experiment(num_epochs=1, agg_type='max'))
