@@ -1,52 +1,9 @@
-import random
-import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import dgl
 import dgl.function as fn
-
-
-class ReplayBuffer():
-
-    def __init__(self, size=10000):
-        self.obs_mem = []
-        self.act_mem = []
-        self.rew_mem = []
-        self.next_obs_mem = []
-        self.ctr = 0
-        self.size = size
-
-    def store(self, obs, act, rew, next_obs):
-        if self.ctr < self.size:
-            self.obs_mem.append(obs)
-            self.act_mem.append(act)
-            self.rew_mem.append(rew)
-            self.next_obs_mem.append(next_obs)
-        else:
-            idx = self.ctr % self.size
-            self.obs_mem[idx] = obs
-            self.act_mem[idx] = act
-            self.rew_mem[idx] = rew
-            self.next_obs_mem[idx] = next_obs
-
-        self.ctr += 1
-
-    def sample(self, num_samples):
-        if self.ctr < num_samples:
-            raise ValueError("Too few entries in replay buffer to sample!")
-        
-        max_idx = min(self.ctr, self.size)
-        idxs = random.sample(range(max_idx), num_samples)
-
-        obs_sample = [self.obs_mem[i] for i in idxs]
-        act_sample = [self.act_mem[i] for i in idxs]
-        rew_sample = [self.rew_mem[i] for i in idxs]
-        next_obs_sample = [self.next_obs_mem[i] for i in idxs]
-
-        return obs_sample, act_sample, rew_sample, next_obs_sample
 
 
 class GNNConv(nn.Module):
@@ -94,7 +51,7 @@ class GNNConv(nn.Module):
 
 
 class DGQN(nn.Module):
-    def __init__(self, num_routes, emb_dim, num_layers):
+    def __init__(self, in_dim, act_dim, emb_dim, num_layers):
         super(DGQN, self).__init__()
         """
         emb_dim: int
@@ -103,7 +60,7 @@ class DGQN(nn.Module):
         self.emb_dim = emb_dim
 
         ### Edge initial MLP
-        self.linear1 = nn.Linear(num_routes + 1, emb_dim)
+        self.linear1 = nn.Linear(in_dim, emb_dim)
         self.linear2 = nn.Linear(emb_dim, emb_dim)
 
         ### List of graph conv layers
@@ -114,14 +71,15 @@ class DGQN(nn.Module):
 
         ### Graph readout MLP
         self.linear3 = nn.Linear(emb_dim, emb_dim)
-        self.linear4 = nn.Linear(emb_dim, num_routes)
+        self.linear4 = nn.Linear(emb_dim, act_dim)
         
 
-    def forward(self, g, obs):
+    def forward(self, g):
         with g.local_scope():
 
             ### Transform the observation on the edges
-            he = F.relu(self.linear1(obs))
+            he = g.edata['obs']
+            he = F.relu(self.linear1(he))
             he = self.linear2(he)
 
             ### Set inital node feature vectors all the same

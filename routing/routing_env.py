@@ -18,6 +18,8 @@ class RoutingEnv():
         self.load = None
         self.routes = None
         self.done = True
+        self.act_dim = num_routes
+        self.obs_dim = num_routes + 1
 
     @torch.no_grad()
     def _get_next_load(self):
@@ -40,7 +42,7 @@ class RoutingEnv():
         self._get_next_load()
         self.done = False
         obs = self.dgl_graph.edata["feat"].detach().clone()
-        return obs, self.dgl_graph
+        return obs
 
     @torch.no_grad()
     def step(self, act):
@@ -64,7 +66,11 @@ class RoutingEnv():
         return obs, reward, self.done
 
     def sample_action(self):
-        return np.random.choice(self.num_routes)    
+        return np.random.choice(self.num_routes)  
+
+
+    def get_dgl_graph(self):
+        return copy.deepcopy(self.dgl_graph)
 
 
 if __name__ == '__main__':
