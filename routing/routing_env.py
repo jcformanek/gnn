@@ -10,31 +10,31 @@ from networkx.algorithms.simple_paths import shortest_simple_paths
 class RoutingEnv():
     def __init__(self, nx_graph, num_routs=4, max_cap=200):
         self.nx_graph = nx_graph
+        self.dgl_graph = dgl.add_self_loop(dgl.DGLGraph(nx_graph))
         self.num_routs = num_routs
         self.max_capacity = max_cap
         self.capacity_matrix = None
 
-    def _get_routs(self):
+    def _get_routes(self):
         src, dst = np.random.choice(self.nx_graph.number_of_nodes(), size=2, replace=False)
         all_paths = shortest_simple_paths(self.nx_graph, src, dst)
         rout_list = list(all_paths)[:self.num_routs] # num_routs shortest paths
         
         load = np.random.choice([8, 32, 64])
 
-        rout_stack = []
-        for rout in rout_list:
-            rout_matrix = np.zeros_like(self.capacity_matrix)
-            for i in range(len(rout) - 1):
-                rout_matrix[rout[i], rout[i+1]] = load # allocate load
-            rout_stack.append(rout_matrix)
-
-        return rout_stack, rout_list, load
+        return route_list, load
 
 
     def reset(self):
+        num_edges = dgl_graph.num_edges()
+        self.dgl_graph.edata["feat"] = torch.zeros(num_edges, self.num_routs + 1) + self.max_capacity
+
         self.capacity_matrix = adjacency_matrix(self.nx_graph).toarray() * self.max_capacity
-        self.rout_stack, self.rout_list, self.load = self._get_routs()
+        self.route_list, self.load = self._get_routes()
         self.done = False
+        for route in self.rout_list:
+            for i in range(len(rout) - 1):
+                self.dgl_g.edge_ids(src, dst), 0
         obs = [self.capacity_matrix] + self.rout_stack
         obs = np.stack(obs)
 
