@@ -1,5 +1,6 @@
 import random
 import copy
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -77,7 +78,10 @@ class DGQNAgent():
         self.epsilon_dec = epsilon_dec
         self.optimizer = torch.optim.Adam(self.Q_eval.parameters(), lr=lr)
         self.loss_fn = torch.nn.MSELoss()
+        self.set_dgl_graph(dgl_graph)
+        
 
+    def set_dgl_graph(self, dgl_graph):
         self.dgl_graph_obs_list = []
         for i in range(self.batch_size):
             self.dgl_graph_obs_list.append(copy.deepcopy(dgl_graph))
@@ -87,6 +91,7 @@ class DGQNAgent():
             self.dgl_graph_next_obs_list.append(copy.deepcopy(dgl_graph))
 
         self.dgl_graph = dgl_graph
+
     
     def update_target(self):
         if self.learn_counter % self.target_update_frequency == 0:
@@ -152,7 +157,7 @@ class DGQNAgent():
 def train(agent, env, num_epochs=100):
     scores = []
     avg_scores = []
-    for e in range(num_epochs):
+    for e in tqdm(range(num_epochs)):
         done = False
         obs = env.reset()
         score = 0
@@ -167,20 +172,22 @@ def train(agent, env, num_epochs=100):
 
         avg_score = np.mean(scores[-100:])
         avg_scores.append(avg_score)
+        if e % 100 == 0:
+            print()
+            print('epoch: ', e, ' average score %.1f' % avg_score,
+                'epsilon %.2f' % agent.epsilon)
 
-        print('epoch: ', e, ' average score %.1f' % avg_score,
-            'epsilon %.2f' % agent.epsilon)
-
-    plt.plot(np.arange(0,len(avg_scores)), avg_scores)
-    plt.xlabel('No. of games played')
-    plt.ylabel('Avg. returns')
-    plt.show()
+    # plt.plot(np.arange(0,len(avg_scores)), avg_scores)
+    # plt.xlabel('No. of games played')
+    # plt.ylabel('Avg. returns')
+    # plt.show()
     print('done')
+    return avg_scores
 
-
-def eval(agent, env, num_rounds=1000):
+@torch.no_grad()
+def evaluate(agent, env, num_rounds=300):
     scores = []
-    for e in range(num_rounds):
+    for e in tqdm(range(num_rounds)):
         done = False
         obs = env.reset()
         score = 0
@@ -189,10 +196,24 @@ def eval(agent, env, num_rounds=1000):
             next_obs, rew, done = env.step(act)
             score += rew
         scores.append(score)
+    
+    avg_score = np.mean(scores)
+    return avg_score
 
-    avg_score = np.mean(scores[-100:])
-
-    print('Average score over', num_rounds, 'rounds:', avg_score)
+def evaluate_random_agent(env, num_rounds=300):
+    scores = []
+    for e in tqdm(range(num_rounds)):
+        done = False
+        obs = env.reset()
+        score = 0
+        while not done:
+            act = env.sample_action()
+            next_obs, rew, done = env.step(act)
+            score += rew
+        scores.append(score)
+    
+    avg_score = np.mean(scores)
+    return avg_score
 
 if __name__ == '__main__':
     g = nx.petersen_graph()

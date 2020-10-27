@@ -176,12 +176,10 @@ def run_experiment(num_epochs=10, lr=0.001, emb_dim=100, num_layers=3, agg_type=
     optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_func = torch.nn.BCEWithLogitsLoss()
 
-    valid_curve = []
     test_curve = []
-    train_curve = []
 
     for epoch in range(num_epochs):
-        print("=====Epoch {}=====".format(epoch + 1))
+        print("===== {} epoch {} =====".format(agg_type, epoch + 1))
         print('Training...')
         train(model, train_loader, optimizer, loss_func)
 
@@ -192,31 +190,26 @@ def run_experiment(num_epochs=10, lr=0.001, emb_dim=100, num_layers=3, agg_type=
 
         print({'Train': train_perf, 'Validation': valid_perf, 'Test': test_perf})
 
-        train_curve.append(train_perf['rocauc'])
-        valid_curve.append(valid_perf['rocauc'])
         test_curve.append(test_perf['rocauc'])
 
-    best_val_epoch = np.argmax(np.array(valid_curve))
-    best_train = max(train_curve)
-
-    print('\nFinished training!')
-    print('Best validation score: {}'.format(valid_curve[best_val_epoch]))
-    print('Test score: {}'.format(test_curve[best_val_epoch]))
-
-    return train_curve, valid_curve, test_curve
+    return test_curve
 
 
-def plot_results(train_curve, valid_curve, test_curve):
-    plt.figure(figsize=(9, 3))
-    plt.subplot(131)
-    plt.plot(train_curve)
-    plt.subplot(132)
-    plt.plot(valid_curve)
-    plt.subplot(133)
-    plt.plot(valid_curve)
+def plot_results(sum_curve, mean_curve, max_curve):
+    plt.plot(sum_curve, label="Sum")
+    plt.plot(mean_curve, label="Mean")
+    plt.plot(max_curve, label="Max")
+    plt.title("Accuracy on the test dataset")
+    plt.xlabel("Num. epochs")
+    plt.ylabel("ROC-ACC")
+    plt.legend()
     plt.show()
 
 
 
 if __name__ == "__main__":
-    plot_results(*run_experiment(num_epochs=1, agg_type='max'))
+    num_epochs = 20
+    sum_curve = run_experiment(num_epochs=num_epochs, agg_type='sum')
+    mean_curve = run_experiment(num_epochs=num_epochs, agg_type='mean')
+    max_curve = run_experiment(num_epochs=num_epochs, agg_type='max')
+    plot_results(sum_curve, mean_curve, max_curve)

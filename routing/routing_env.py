@@ -9,6 +9,8 @@ import copy
 
 class RoutingEnv():
     def __init__(self, nx_graph, num_routes=4, max_capacity=200):
+        if not nx.is_connected(nx_graph):
+            raise ValueError("Network must be a connected graph.")
         self.max_capacity = max_capacity
         self.num_routes = num_routes
         self.nx_graph = nx_graph
