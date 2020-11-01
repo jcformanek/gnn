@@ -177,11 +177,8 @@ def train(agent, env, num_epochs=100):
             print('epoch: ', e, ' average score %.1f' % avg_score,
                 'epsilon %.2f' % agent.epsilon)
 
-    # plt.plot(np.arange(0,len(avg_scores)), avg_scores)
-    # plt.xlabel('No. of games played')
-    # plt.ylabel('Avg. returns')
-    # plt.show()
     print('done')
+    
     return avg_scores
 
 @torch.no_grad()
